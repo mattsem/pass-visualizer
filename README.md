@@ -10,7 +10,6 @@ Install dependencies, run app.py
 - mplsoccer
 - numpy
 
-
-
+![image](https://github.com/mattsem/pass-visualizer/blob/main/example.png)
 
 
