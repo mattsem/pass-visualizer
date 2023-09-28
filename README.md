@@ -5,10 +5,12 @@ Web app to plot passing data for StatsBomb provided soccer data
 Install dependencies, run app.py
 
 # Dependencies 
--Flask
--matplotlib
--mplsoccer
--numpy
+- Flask
+- matplotlib
+- mplsoccer
+- numpy
+
+
 
 
 
