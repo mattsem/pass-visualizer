@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<head>
+  <title>Player Passing Charts</title>
+  <style>
+    .center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    </style>
+</head>
+<script>
+  function change(selObject){
+    window.location.href = "/?team=" + selObject.value
+  }
+</script>
+<body>
+   <label for="fileSelect">Select a Game:</label>
+    <select id="fileSelect" onchange="change(this)">
+      
+      <option value="">Select a file</option>
+      {% if games %}
+      {% for game in games %}
+        <option value = "{{ game }}">{{ game }}</option>
+      {% endfor %}
+      {% endif %}
+
+    </select>
+    
+    <img src="data:image/png;base64, {{ plot_url }}" alt="Player Passes" width="900" height="700" class="center">
+</body>
+
+
+</html>
