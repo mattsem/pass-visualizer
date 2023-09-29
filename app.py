@@ -16,10 +16,18 @@ app = Flask(__name__)
 path = './statsbomb/open-data-master/data/events'
 filenames=os.listdir(path)
 games=[x.split('.')[0] for x in filenames]
-print(games)
+#print(games)
+
+
+
 def game_list():
     return games
 
+def game_names():
+    names = []
+    with open('team_names.txt', 'r') as f:
+        names = f.read().splitlines()
+    return names
 
 @app.route('/')
 def plot():
@@ -30,8 +38,12 @@ def plot():
     else:
         game_id = 7298
 
-
+    
     gameList = game_list()
+    gameNames = game_names()
+
+    games_and_names = list(zip(gameList,gameNames))
+
     print("start")
     parser = Sbopen()
     df, related, freeze, tactics = parser.event(game_id)
@@ -76,9 +88,9 @@ def plot():
     plt.clf()
     plt.close()
     
-    return render_template('index.html', plot_url = plot_url, games = gameList)
+    return render_template('index.html', plot_url = plot_url, games_and_names = games_and_names)
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port = 5000)

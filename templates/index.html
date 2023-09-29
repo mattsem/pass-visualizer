@@ -21,9 +21,9 @@
     <select id="fileSelect" onchange="change(this)">
       
       <option value="">Select a file</option>
-      {% if games %}
-      {% for game in games %}
-        <option value = "{{ game }}">{{ game }}</option>
+      {% if games_and_names %}
+      {% for game,gameName in games_and_names %}
+        <option value = "{{ game }}">{{ gameName}}</option>
       {% endfor %}
       {% endif %}
 
