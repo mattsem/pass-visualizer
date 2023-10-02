@@ -12,23 +12,30 @@
     </style>
 </head>
 <script>
-  function change(selObject){
-    window.location.href = "/?team=" + selObject.value
+  function changeGame(selObject){
+    window.location.href = "/?game=" + selObject.value
   }
+
+  function changeTeam(object){
+    window.location.href = "/?team=" + object.value
+  }
+
 </script>
 <body>
    <label for="fileSelect">Select a Game:</label>
-    <select id="fileSelect" onchange="change(this)">
+    <select id="fileSelect" onchange="changeGame(this)">
       
       <option value="">Select a file</option>
       {% if games_and_names %}
       {% for game,gameName in games_and_names %}
         <option value = "{{ game }}">{{ gameName}}</option>
       {% endfor %}
-      {% endif %}
-
+      {% endif %}    
     </select>
-    
+
+    <button type="button" onclick="changeTeam(this)" value = "{{ team1 }}">{{ team1 }}</button>
+    <button type="button" onclick="changeTeam(this)"" value = "{{ team2 }}">{{ team2 }}</button>
+
     <img src="data:image/png;base64, {{ plot_url }}" alt="Player Passes" width="900" height="700" class="center">
 </body>
 

@@ -1,5 +1,8 @@
 from flask import Flask, send_file, render_template, request
 
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import numpy as np
 from mplsoccer import Pitch, Sbopen
@@ -18,7 +21,7 @@ filenames=os.listdir(path)
 games=[x.split('.')[0] for x in filenames]
 #print(games)
 
-
+game_id = 7298
 
 def game_list():
     return games
@@ -31,14 +34,17 @@ def game_names():
 
 @app.route('/')
 def plot():
-    
-    team = request.args.get('team')
-    if team is not None:
-        game_id = team
-    else:
-        game_id = 7298
+    global game_id
+    global selectedTeam
 
-    
+    game = request.args.get('game')
+    if game is not None:
+        game_id = game
+    else:
+        game_id = game_id
+        
+
+
     gameList = game_list()
     gameNames = game_names()
 
@@ -48,8 +54,17 @@ def plot():
     parser = Sbopen()
     df, related, freeze, tactics = parser.event(game_id)
 
+    team1 = df.team_name[0]
+    team2 = df.team_name[1]
+
+    team = request.args.get('team')
+    if team is not None:
+        selectedTeam = team
+    else:
+        selectedTeam = team1
+
     #prepare the dataframe of passes that were not throw ins
-    mask = (df.type_name == 'Pass') & (df.team_name == df.team_name[0]) & (df.sub_type_name != "Throw-in")
+    mask = (df.type_name == 'Pass') & (df.team_name == selectedTeam) & (df.sub_type_name != "Throw-in")
     df_passes = df.loc[mask, ['x', 'y', 'end_x', 'end_y', 'player_name','position_name','outcome_id']]
     #get the list of all players who made a pass
     names = df_passes['player_name'].unique()
@@ -77,7 +92,7 @@ def plot():
         ax.remove()
 
     #set title
-    axs['title'].text(0.5, 0.5, df.team_name[0] + ' vs ' + df.team_name[1], ha='center', va='center', fontsize=30)
+    axs['title'].text(0.5, 0.5, df.team_name[0] + ' vs ' + df.team_name[1] + ' - ' + selectedTeam, ha='center', va='center', fontsize=30)
     #plt.show()
 
     img_stream = io.BytesIO()
@@ -88,9 +103,9 @@ def plot():
     plt.clf()
     plt.close()
     
-    return render_template('index.html', plot_url = plot_url, games_and_names = games_and_names)
+    return render_template('index.html', plot_url = plot_url, games_and_names = games_and_names, team1 = team1, team2 = team2)
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port = 5000)
+    app.run(debug=True, port = 5001)
