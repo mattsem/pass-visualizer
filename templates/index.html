@@ -12,30 +12,46 @@
     </style>
 </head>
 <script>
-  function changeGame(selObject){
-    window.location.href = "/?game=" + selObject.value
+  function changeHome(selObject){
+    window.location.href = "/?home=" + selObject.value
   }
 
-  function changeTeam(object){
-    window.location.href = "/?team=" + object.value
+  function setTeams(){
+    var a  = document.getElementById("awaySelect").value
+    window.location.href = "/?home=" + "{{ team1 }}" + "&away=" + a
   }
 
+  function changeSelect(object){
+    window.location.href = "/?home=" + "{{ team1 }}" + "&away=" + "{{ team2 }}" + "&select=" + object.value
+  }
 </script>
 <body>
-   <label for="fileSelect">Select a Game:</label>
-    <select id="fileSelect" onchange="changeGame(this)">
+   <label for="homeSelect">Select a Team:</label>
+    <select id="homeSelect" onchange="changeHome(this)">
       
-      <option value="">Select a file</option>
-      {% if games_and_names %}
-      {% for game,gameName in games_and_names %}
-        <option value = "{{ game }}">{{ gameName}}</option>
+      <option value=""> {{ team1 }}</option>
+      {% if teams %}
+      {% for team in teams %}
+        <option value = "{{ team }}">{{ team }}</option>
       {% endfor %}
       {% endif %}    
     </select>
 
-    <button type="button" onclick="changeTeam(this)" value = "{{ team1 }}">{{ team1 }}</button>
-    <button type="button" onclick="changeTeam(this)"" value = "{{ team2 }}">{{ team2 }}</button>
+    <label for="awaySelect">Select Opponent:</label>
+    <select id="awaySelect" onchange="setTeams()">
+      
+      <option value="">{{ team2 }} </option>
+      {% if opponents %}
+      {% for team in opponents %}
+        <option value = "{{ team }}">{{ team }}</option>
+      {% endfor %}
+      {% endif %}    
+    </select>
 
+
+      <button type="button" onclick="changeSelect(this)" value = "{{ selectedTeam }}">View Opponent</button>
+
+    <h2 style = "text-align: center">{{ team1 }} vs {{ team2 }}</h2>
     <img src="data:image/png;base64, {{ plot_url }}" alt="Player Passes" width="900" height="700" class="center">
 </body>
 

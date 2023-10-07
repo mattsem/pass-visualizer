@@ -23,6 +23,34 @@ for file in filenames:
         team_1 = data[0]['team_name']
         team_2 = data[1]['team_name']
         cur.execute("INSERT INTO game(home,away,file_num) VALUES(?,?,?)", (team_1, team_2, game_id))
-        print(data[0]['team_name'] + ' ' + data[1]['team_name'] + ' ' + game_id)
+        print(team_1 + ' ' + team_2 + ' ' + game_id)
         conn.commit()
+
+cur.execute('''CREATE TABLE IF NOT EXISTS passes(
+        file_num TEXT,
+        x FLOAT,
+        y FLOAT,
+        end_x FLOAT,
+        end_y FLOAT,
+        player_name TEXT,
+        position_name TEXT,
+        outcome_id INTEGER,
+        team_name TEXT)
+            ''')
+
+parser = Sbopen()
+x=0
+for file in filenames:
+    filename = file.split('.')[0]
+    df, related, freeze, tactics = parser.event(filename)
+    mask = (df.type_name == 'Pass') & (df.sub_type_name != "Throw-in")
+    df_passes = df.loc[mask, ['x', 'y', 'end_x', 'end_y', 'player_name','position_name','outcome_id', 'team_name']]
+    df_passes['file_num'] = filename
+    df_passes.to_sql('passes', conn, if_exists='append', index=False)
+
+    print(x)
+    x=x+1
+    conn.commit()
+
+
 conn.close()

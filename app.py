@@ -6,66 +6,122 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from mplsoccer import Pitch, Sbopen
+import pandas as pd
 
 import os
 import io
 import base64
+import sqlite3
 
 
 
 app = Flask(__name__)
 
 
-path = './statsbomb/open-data-master/data/events'
-filenames=os.listdir(path)
-games=[x.split('.')[0] for x in filenames]
-#print(games)
 
-game_id = 7298
+home_team = 'Barcelona'
 
-def game_list():
-    return games
+def get_all_teams():
+    conn = sqlite3.connect("games.db")
+    cur = conn.cursor()
+    cur.execute('''
+    SELECT team_name FROM (
+        SELECT home AS team_name FROM game
+        UNION
+        SELECT away AS team_name FROM game
+    ) AS teams
+    ORDER BY team_name ASC;
+                ''')
+    rows = cur.fetchall()
+    # Extract unique team names from the rows
+    teams_names= {row[0] for row in rows if row[0]}
+    teams_names = sorted(list(teams_names))
+   #print(teams_names)
+    return teams_names
 
-def game_names():
-    names = []
-    with open('team_names.txt', 'r') as f:
-        names = f.read().splitlines()
-    return names
+def get_opponents(homeTeam):
+    conn = sqlite3.connect("games.db")
+    cur = conn.cursor()
+    cur.execute(''' 
+    
+   SELECT DISTINCT opponent
+        FROM (
+            SELECT
+                CASE
+                    WHEN home = ? THEN away
+                    ELSE home
+                END AS opponent
+            FROM game
+            WHERE home = ? OR away = ?
+        ) AS opponents
+        ORDER BY opponent ASC;
+    ''', (homeTeam, homeTeam, homeTeam))
+
+    opponents = [row[0] for row in cur.fetchall()]
+    conn.close()
+    #print(opponents)
+    return opponents
+
+def find_game(homeTeam, opponent):
+    conn = sqlite3.connect("games.db")
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT file_num
+        FROM game
+        WHERE (home = ? AND away = ?)
+           OR (home = ? AND away = ?);
+
+        ''', (homeTeam, opponent, opponent, homeTeam))
+    
+    game_ids = [row[0] for row in cur.fetchall()]
+    conn.close()
+    return game_ids
+
 
 @app.route('/')
 def plot():
-    global game_id
+    global home_team
     global selectedTeam
+    global selectedOpponent
+    
 
-    game = request.args.get('game')
-    if game is not None:
-        game_id = game
+    home = request.args.get('home')
+    if home == '' or home is None:
+        home_team = home_team
     else:
-        game_id = game_id
+        home_team = home
         
+    
 
+    teams = get_all_teams()
+    opponents = get_opponents(home_team)
 
-    gameList = game_list()
-    gameNames = game_names()
-
-    games_and_names = list(zip(gameList,gameNames))
-
-    print("start")
-    parser = Sbopen()
-    df, related, freeze, tactics = parser.event(game_id)
-
-    team1 = df.team_name[0]
-    team2 = df.team_name[1]
-
-    team = request.args.get('team')
-    if team is not None:
-        selectedTeam = team
+    away = request.args.get('away')
+    if away == '' or away is None:
+        selectedOpponent = opponents[0]
     else:
-        selectedTeam = team1
+        selectedOpponent = away
 
-    #prepare the dataframe of passes that were not throw ins
-    mask = (df.type_name == 'Pass') & (df.team_name == selectedTeam) & (df.sub_type_name != "Throw-in")
+    
+    select = request.args.get('select')
+    if select is not None:
+        if select == home_team:
+            selectedTeam = selectedOpponent 
+        else:
+            selectedTeam = home_team
+    else:
+        selectedTeam = home_team
+
+
+    game_id = find_game(home_team, selectedOpponent)[0]
+    conn = sqlite3.connect("games.db")
+    df = pd.read_sql_query('SELECT * FROM passes WHERE file_num IS ?', conn, params = (game_id,))
+  
+
+    mask = df.team_name == selectedTeam
     df_passes = df.loc[mask, ['x', 'y', 'end_x', 'end_y', 'player_name','position_name','outcome_id']]
+
+    name_to_position = df_passes.groupby('player_name')['position_name'].first().to_dict()
     #get the list of all players who made a pass
     names = df_passes['player_name'].unique()
     
@@ -74,17 +130,13 @@ def plot():
     fig, axs = pitch.grid(ncols = 4, nrows = 4, grid_height=0.85, title_height=0.06, axis=False,
                      endnote_height=0.04, title_space=0.04, endnote_space=0.01)
 
-    #for each player
-    for name, position, ax in zip(names, df_passes['position_name'], axs['pitch'].flat[:len(names)]):
-    #put player name over the plot
+    #plot passes for each player
+    for name, ax in zip(names, axs['pitch'].flat[:len(names)]):
+        position = name_to_position[name]
         ax.text(60, -10, f'{name} ({position})', ha='center', va='center', fontsize=8)
-    #take only passes by this player
         player_df = df_passes.loc[df_passes["player_name"] == name]
-    #scatter
         pitch.scatter(player_df.x, player_df.y, alpha = 0.2, s = 50, color = "blue", ax=ax)
-    #set colors based on completion
         colors = np.where(player_df['outcome_id'] == 9, 'red', 'blue')
-    #plot arrows
         pitch.arrows(player_df.x, player_df.y, player_df.end_x, player_df.end_y, color = colors, ax=ax, width=1)
 
     #remove extra pitches
@@ -92,8 +144,7 @@ def plot():
         ax.remove()
 
     #set title
-    axs['title'].text(0.5, 0.5, df.team_name[0] + ' vs ' + df.team_name[1] + ' - ' + selectedTeam, ha='center', va='center', fontsize=30)
-    #plt.show()
+    axs['title'].text(0.5, 0.5,selectedTeam, ha='center', va='center', fontsize=20)
 
     img_stream = io.BytesIO()
     plt.savefig(img_stream, format='png')
@@ -103,7 +154,7 @@ def plot():
     plt.clf()
     plt.close()
     
-    return render_template('index.html', plot_url = plot_url, games_and_names = games_and_names, team1 = team1, team2 = team2)
+    return render_template('index.html', plot_url = plot_url, team1 = home_team, team2 = selectedOpponent, teams = teams, opponents = opponents, selectedTeam = selectedTeam)
 
 
 
