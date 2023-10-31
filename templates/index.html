@@ -9,9 +9,57 @@
       margin-left: auto;
       margin-right: auto;
     }
+    /* Dropdown Button */
+.dropbtn {
+  background-color: #3498DB;
+  color: white;
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+}
+
+/* Dropdown button on hover & focus */
+.dropbtn:hover, .dropbtn:focus {
+  background-color: #2980B9;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+  float: right;
+  position: relative;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  right:0;
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: #ddd;}
+
+/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+.show {display:block;}
+    
     </style>
 </head>
 <script>
+  
+
   function changeHome(selObject){
     window.location.href = "/?home=" + selObject.value
   }
@@ -24,6 +72,72 @@
   function changeSelect(object){
     window.location.href = "/?home=" + "{{ team1 }}" + "&away=" + "{{ team2 }}" + "&select=" + object.value
   }
+  function showDropdown() {
+    document.getElementById("myDropdown").classList.toggle("show");
+  }
+
+// Close the dropdown menu if the user clicks outside of it
+  window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+
+
+function selectView(option) {
+    // Hide the dropdown
+    document.getElementById("myDropdown").classList.remove("show");
+
+    var pass = document.getElementById('passing')
+    pass.style.display = "none"
+    var shooting= document.getElementById("shooting")
+    shooting.style.display = 'none'
+    var xT= document.getElementById("xT")
+    xT.style.display = 'none'
+
+    // Determine which option was selected and update the content
+    if (option === "passingLink") {
+        // Update content for the "Passing" option
+        // You can change the content here or load a different page/section.
+        // Example: document.getElementById("content").innerHTML = "Selected: Passing";
+        var pass= document.getElementById("passing")
+        pass.style.display = "block"
+    } else if (option === "shootingLink") {
+        // Update content for the "Shooting" option
+        var shooting= document.getElementById("shooting")
+        shooting.style.display = 'block'
+    } else if (option === "xtLeadersLink") {
+        // Update content for the "xT leaders" option
+        var xT= document.getElementById("xT")
+        xT.style.display = 'block'
+    }
+}
+
+
+document.addEventListener("DOMContentLoaded", function() {
+// Add event listeners to the dropdown links
+document.getElementById("passingLink").addEventListener("click", function() {
+    selectView("passingLink");
+});
+
+document.getElementById("shootingLink").addEventListener("click", function() {
+    selectView("shootingLink");
+});
+
+document.getElementById("xtLeadersLink").addEventListener("click", function() {
+    selectView("xtLeadersLink");
+});
+
+selectView("passingLink"); 
+});
+
 </script>
 <body>
    <label for="homeSelect">Select a Team:</label>
@@ -51,9 +165,31 @@
 
       <button type="button" onclick="changeSelect(this)" value = "{{ selectedTeam }}">View Opponent</button>
 
-    <h2 style = "text-align: center">{{ team1 }} vs {{ team2 }}</h2>
-    <img src="data:image/png;base64, {{ plot_url }}" alt="Player Passes" width="900" height="700" class="center">
-</body>
+      <div class="dropdown">
+        <button onclick="showDropdown()" class="dropbtn">Select View</button>
+        <div id="myDropdown" class="dropdown-content">
+          <a id="passingLink">Passing</a>
+          <a id="shootingLink">Shooting</a>
+          <a id="xtLeadersLink">xT leaders</a>
+        </div>
+      </div>
+
+    <h2 style = "text-align: center">{{team1}}: {{homeScore}} - {{team2}}: {{awayScore}}</h2>
+
+
+    <div id = "passing" class = "tab-content">
+      <img src="data:image/png;base64, {{ pass_plot }}" alt="Player Passes" width="900" height="700" class="center">
+    </div>
+
+    <div id = "shooting" class = "tab-content">
+      <img src="data:image/png;base64, {{ shot_plot }}" alt="Player Shots" width="900" height="700" class="center">
+    </div>
+
+    <div id = "xT" class = "tab-content">
+      <h1>xT</h1>
+    </div>
+
+  </body>
 
 
 </html>
