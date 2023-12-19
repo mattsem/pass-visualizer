@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mplsoccer import Pitch, Sbopen
+from mplsoccer import Pitch, Sbopen, VerticalPitch
 import pandas as pd
 
 import os
@@ -110,30 +110,30 @@ def plot_shots(game_id, selectedTeam):
     parser = Sbopen()
     df, related, freeze, tactics = parser.event(game_id)
     mask = (df.type_name == 'Shot') & (df.team_name == selectedTeam)
-    df_shots = df.loc[mask, ['x', 'y', 'end_x', 'end_y', 'player_name','position_name','outcome_id']]
+    df_shots = df.loc[mask, ['x', 'y', 'end_x', 'end_y', 'player_name','position_name','outcome_id', 'shot_statsbomb_xg']]
     #print(df_shots)
     name_to_position = df_shots.groupby('player_name')['position_name'].first().to_dict()
-    #get the list of all players who made a pass
+    #get the list of all players who made a shot
     names = df_shots['player_name'].unique()
 
 
-    pitch = Pitch(line_color='black', pad_top=20)
+    pitch = VerticalPitch(line_color='black', pad_top=20,half = True, pad_bottom = -20, pad_left = -10, pad_right = -10)
     fig, axs = pitch.grid(ncols = 4, nrows = 4, grid_height=0.85, title_height=0.06, axis=False,
-                     endnote_height=0.04, title_space=0.04, endnote_space=0.01)
+                     endnote_height=0.04, title_space=0.04, endnote_space=0.01, space = 0.15)
 
-    #plot passes for each player
-    for name, ax in zip(names, axs['pitch'].flat[:len(names)]):
+    #plot shots for each player
+    for name, ax in zip(names, axs['pitch'].flat):
         position = name_to_position[name]
-        ax.text(60, -20, f'{name}', ha='center', va='center', fontsize=10, wrap = True)
-        ax.text(60, -10, f'({position})', ha='center', va='center', fontsize=8, wrap = True)
+        ax.text(40, 80, f'{name}', ha='center', va='center', fontsize=10, wrap = True)
+        ax.text(40, 70, f'({position})', ha='center', va='center', fontsize=8, wrap = True)
         player_df = df_shots.loc[df_shots["player_name"] == name]
-        pitch.scatter(player_df.x, player_df.y, alpha = 0.2, s = 50, color = "blue", ax=ax)
+        pitch.scatter(player_df.x, player_df.y, alpha = 0.2, s = ((player_df.shot_statsbomb_xg * 200) ** 2)+ 100, color = "blue", ax=ax)
         colors = np.where(player_df['outcome_id'] == 97, 'blue', 'red')
         pitch.arrows(player_df.x, player_df.y, player_df.end_x, player_df.end_y, color = colors, ax=ax, width=1)
 
     #remove extra pitches
-    for ax in axs['pitch'][-1, 16 - len(names):]:
-        fig.delaxes(ax)
+    for ax in axs['pitch'].flat[len(names):]:
+        ax.remove()
 
     #set title
     axs['title'].text(0.5, 0.5,selectedTeam + ' - Shooting', ha='center', va='center', fontsize=20)
@@ -165,7 +165,7 @@ def plot_passes(game_id,selectedTeam):
                      endnote_height=0.04, title_space=0.04, endnote_space=0.01)
 
     #plot passes for each player
-    for name, ax in zip(names, axs['pitch'].flat[:len(names)]):
+    for name, ax in zip(names, axs['pitch'].flat):
         position = name_to_position[name]
         ax.text(60, -20, f'{name}', ha='center', va='center', fontsize=10, wrap = True)
         ax.text(60, -10, f'({position})', ha='center', va='center', fontsize=8, wrap = True)
@@ -175,8 +175,8 @@ def plot_passes(game_id,selectedTeam):
         pitch.arrows(player_df.x, player_df.y, player_df.end_x, player_df.end_y, color = colors, ax=ax, width=1)
 
     #remove extra pitches
-    for ax in axs['pitch'][-1, 16 - len(names):]:
-        fig.delaxes(ax)
+    for ax in axs['pitch'].flat[len(names):]:
+        ax.remove()
 
     #set title
     axs['title'].text(0.5, 0.5,selectedTeam + ' - Passing', ha='center', va='center', fontsize=20)
