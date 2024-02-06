@@ -214,8 +214,7 @@ def plot():
     else:
         selectedOpponent = away
 
-    select = request.args.get('select')
-    if select is not None:
+    if (select := request.args.get('select')) is not None:
         if select == home_team:
             selectedTeam = selectedOpponent 
         else:
